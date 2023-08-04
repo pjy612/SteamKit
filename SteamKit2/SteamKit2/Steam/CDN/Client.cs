@@ -210,6 +210,7 @@ namespace SteamKit2.CDN
                 Host = server.VHost,
                 Port = server.Port,
                 Path = command,
+                Query = server.Token
             };
 
             if ( proxyServer != null && proxyServer.UseAsProxy && proxyServer.ProxyRequestPathTemplate != null )

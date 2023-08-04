@@ -25,7 +25,7 @@ namespace SteamKit2
         private const int PROTOBUF_METADATA_MAGIC = 0x1F4812BE;
         private const int PROTOBUF_SIGNATURE_MAGIC = 0x1B81B817;
         private const int PROTOBUF_ENDOFMANIFEST_MAGIC = 0x32C415AB;
-
+        public byte[] BaseManifest { get; set; }
         /// <summary>
         /// Represents a single chunk within a file.
         /// </summary>
@@ -168,6 +168,7 @@ namespace SteamKit2
 
         internal DepotManifest(byte[] data)
         {
+            BaseManifest = data;
             InternalDeserialize(data);
         }
 

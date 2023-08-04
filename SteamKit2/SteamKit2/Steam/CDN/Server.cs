@@ -93,6 +93,7 @@ namespace SteamKit2.CDN
         /// Gets the list of app ids this server can be used with.
         /// </summary>
         public uint[] AllowedAppIds { get; internal set; } = Array.Empty<uint>();
+        public string? Token { get; set; }
 
         /// <summary>
         /// Performs an implicit conversion from <see cref="System.Net.IPEndPoint"/> to <see cref="Server"/>.
