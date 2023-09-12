@@ -22,15 +22,15 @@ namespace SteamKit2.Authentication
 
             do
             {
-                Console.Error.Write( "STEAM GUARD! Please enter your 2-factor auth code from your authenticator app: " );
+                Console.Error.Write(
+                    "STEAM GUARD! Please enter your 2-factor auth code from your authenticator app: " );
                 code = Console.ReadLine()?.Trim();
 
-                if( code == null )
+                if ( code == null )
                 {
                     break;
                 }
-            }
-            while ( string.IsNullOrEmpty( code ) );
+            } while ( string.IsNullOrEmpty( code ) );
 
             return Task.FromResult( code! );
         }
@@ -44,7 +44,7 @@ namespace SteamKit2.Authentication
             }
 
             string? code;
-
+            int i = 0;
             do
             {
                 Console.Error.Write( $"STEAM GUARD! Please enter the auth code sent to the email at {email}: " );
@@ -54,8 +54,9 @@ namespace SteamKit2.Authentication
                 {
                     break;
                 }
-            }
-            while ( string.IsNullOrEmpty( code ) );
+
+                if ( string.IsNullOrEmpty( code ) ) i++;
+            } while ( string.IsNullOrEmpty( code ) && i < 2 );
 
             return Task.FromResult( code! );
         }
