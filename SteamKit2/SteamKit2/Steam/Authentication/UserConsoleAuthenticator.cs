@@ -43,21 +43,21 @@ namespace SteamKit2.Authentication
                 Console.Error.WriteLine( "The previous 2-factor auth code you have provided is incorrect." );
             }
 
-            string? code;
+            string? code = string.Empty;
             int i = 0;
             do
             {
                 Console.Error.Write( $"STEAM GUARD! Please enter the auth code sent to the email at {email}: " );
                 code = Console.ReadLine()?.Trim();
 
-                if ( code == null )
+                if ( string.IsNullOrEmpty( code ) )
                 {
                     break;
                 }
 
                 if ( string.IsNullOrEmpty( code ) ) i++;
             } while ( string.IsNullOrEmpty( code ) && i < 2 );
-
+            
             return Task.FromResult( code! );
         }
 
