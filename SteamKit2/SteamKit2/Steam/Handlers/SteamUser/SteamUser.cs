@@ -122,6 +122,7 @@ namespace SteamKit2
             /// <value>The machine name.</value>
             public string? MachineName { get; set; } = $"{Environment.MachineName} (SteamKit2)";
 
+            public bool NotAuth { get; set; } = false;
             /// <summary>
             /// Initializes a new instance of the <see cref="LogOnDetails"/> class.
             /// </summary>
