@@ -150,6 +150,12 @@ namespace SteamKit2
                         Read();
 
                         char escapedChar = ( char )Read();
+                        if ( Peek() == '\n' )
+                        {
+                            sb.Append( '\\' );
+                            break;
+                        }
+
                         char replacedChar;
 
                         if ( escapedMapping.TryGetValue( escapedChar, out replacedChar ) )
