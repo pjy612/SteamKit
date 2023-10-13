@@ -268,7 +268,7 @@ namespace SteamKit2
         /// <summary>
         /// Gets the children of this instance.
         /// </summary>
-        public List<KeyValue> Children { get; private set; }
+        public List<KeyValue> Children { get; set; }
 
 
         /// <summary>
