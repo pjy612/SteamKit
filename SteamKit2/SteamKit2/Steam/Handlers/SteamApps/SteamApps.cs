@@ -159,7 +159,7 @@ namespace SteamKit2
         /// <param name="sendAppChangelist">Whether to send app changes.</param>
         /// <param name="sendPackageChangelist">Whether to send package changes.</param>
         /// <returns>The Job ID of the request. This can be used to find the appropriate <see cref="PICSChangesCallback"/>.</returns>
-        public AsyncJob<PICSChangesCallback> PICSGetChangesSince( uint lastChangeNumber = 0, bool sendAppChangelist = true, bool sendPackageChangelist = false )
+        public AsyncJob<PICSChangesCallback> PICSGetChangesSince( uint lastChangeNumber = 0, bool sendAppChangelist = true, bool sendPackageChangelist = false,uint? numAppInfoCached = null )
         {
             var request = new ClientMsgProtobuf<CMsgClientPICSChangesSinceRequest>( EMsg.ClientPICSChangesSinceRequest );
             request.SourceJobID = Client.GetNextJobID();
@@ -167,9 +167,11 @@ namespace SteamKit2
             request.Body.since_change_number = lastChangeNumber;
             request.Body.send_app_info_changes = sendAppChangelist;
             request.Body.send_package_info_changes = sendPackageChangelist;
-
+            if ( numAppInfoCached.HasValue )
+            {
+                request.Body.num_app_info_cached = numAppInfoCached.Value;
+            }
             this.Client.Send( request );
-
             return new AsyncJob<PICSChangesCallback>( this.Client, request.SourceJobID );
         }
 
