@@ -25,8 +25,25 @@ namespace SteamKit2
                 { EMsg.ClientGetNumberOfCurrentPlayersDPResponse, HandleNumberOfPlayersResponse },
                 { EMsg.ClientLBSFindOrCreateLBResponse, HandleFindOrCreateLBResponse },
                 { EMsg.ClientLBSGetLBEntriesResponse, HandleGetLBEntriesRespons },
+                { EMsg.ClientGetUserStatsResponse, HandleGetUserStatsResponse },
             };
         }
+
+        public AsyncJob<GetUserStatsCallback> GetUserStats( uint appId , ulong? steam_id_for_user = null)
+        {
+            var msg = new ClientMsgProtobuf<CMsgClientGetUserStats>( EMsg.ClientGetUserStats );
+            msg.SourceJobID = Client.GetNextJobID();
+
+            msg.Body.game_id = appId;
+            if ( steam_id_for_user.HasValue )
+            {
+                msg.Body.steam_id_for_user = steam_id_for_user.Value;
+            }
+            Client.Send( msg );
+            return new AsyncJob<GetUserStatsCallback>( this.Client, msg.SourceJobID );
+        }
+
+
 
         /// <summary>
         /// Retrieves the number of current players for a given app id.
@@ -137,10 +154,10 @@ namespace SteamKit2
         {
             if ( packetMsg == null )
             {
-                throw new ArgumentNullException( nameof(packetMsg) );
+                throw new ArgumentNullException( nameof( packetMsg ) );
             }
 
-            if (! dispatchMap.TryGetValue( packetMsg.MsgType, out var handlerFunc ) )
+            if ( !dispatchMap.TryGetValue( packetMsg.MsgType, out var handlerFunc ) )
             {
                 // ignore messages that we don't have a handler function for
                 return;
@@ -172,6 +189,17 @@ namespace SteamKit2
             var callback = new LeaderboardEntriesCallback( msg.TargetJobID, msg.Body );
             Client.PostCallback( callback );
         }
+
+
+        private void HandleGetUserStatsResponse( IPacketMsg packetMsg )
+        {
+            var msg = new ClientMsgProtobuf<CMsgClientGetUserStatsResponse>( packetMsg );
+
+            var callback = new GetUserStatsCallback( msg.TargetJobID, msg.Body );
+            Client.PostCallback( callback );
+        }
         #endregion
     }
+
+
 }

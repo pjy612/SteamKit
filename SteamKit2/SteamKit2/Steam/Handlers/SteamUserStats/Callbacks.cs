@@ -5,6 +5,7 @@
 
 
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -36,6 +37,28 @@ namespace SteamKit2
                 this.Result = ( EResult )resp.eresult;
                 this.NumPlayers = ( uint )resp.player_count;
             }
+        }
+
+        public class GetUserStatsCallback : CallbackMsg
+        {
+            /// <summary>
+            /// Gets the result of the request.
+            /// </summary>
+            public EResult Result { get; private set; }
+            public GetUserStatsCallback( JobID jobID, CMsgClientGetUserStatsResponse resp )
+            {
+                this.JobID = jobID;
+                this.Result = ( EResult )resp.eresult;
+                this.AppId = resp.game_id;
+                this.Schema = resp.schema;
+                this.CrcStats = resp.crc_stats;
+            }
+
+            public uint CrcStats { get; set; }
+
+            public byte[] Schema { get; set; }
+
+            public ulong AppId { get; set; }
         }
 
         /// <summary>
@@ -161,5 +184,7 @@ namespace SteamKit2
                 Entries = new ReadOnlyCollection<LeaderboardEntry>( list );
             }
         }
+
+        
     }
 }
