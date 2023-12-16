@@ -483,35 +483,37 @@ namespace SteamKit2
                 /// <summary>
                 /// Gets the ID of the app or package
                 /// </summary>
-                public uint ID { get; private set; }
+                public uint ID { get; set; }
                 /// <summary>
                 /// Gets the current change number for the app or package
                 /// </summary>
-                public uint ChangeNumber { get; private set; }
+                public uint ChangeNumber { get; set; }
                 /// <summary>
                 /// Gets if an access token was required for the request
                 /// </summary>
-                public bool MissingToken { get; private set; }
+                public bool MissingToken { get; set; }
                 /// <summary>
                 /// Gets the hash of the content
                 /// </summary>
-                public byte[]? SHAHash { get; private set; }
+                public byte[]? SHAHash { get; set; }
                 /// <summary>
                 /// Gets the KeyValue info
                 /// </summary>
-                public KeyValue KeyValues { get; private set; }
+                public KeyValue KeyValues { get; set; }
                 /// <summary>
                 /// For an app request, returns if only the public information was requested
                 /// </summary>
-                public bool OnlyPublic { get; private set; }
+                public bool OnlyPublic { get; set; }
                 /// <summary>
                 /// Whether or not to use HTTP to load the KeyValues data.
                 /// </summary>
-                public bool UseHttp { get; private set; }
+                public bool UseHttp { get; set; }
                 /// <summary>
                 /// For an app metadata-only request, returns the Uri for HTTP appinfo requests.
                 /// </summary>
-                public Uri? HttpUri { get; private set; }
+                public Uri? HttpUri { get; set; }
+
+                public PICSProductInfo(){}
 
                 internal PICSProductInfo( CMsgClientPICSProductInfoResponse parentResponse, CMsgClientPICSProductInfoResponse.AppInfo app_info )
                 {

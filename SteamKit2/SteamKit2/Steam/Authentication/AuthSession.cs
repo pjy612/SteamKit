@@ -152,6 +152,10 @@ namespace SteamKit2.Authentication
 
                 // This is a prompt that appears in the Steam mobile app
                 case EAuthSessionGuardType.k_EAuthSessionGuardType_DeviceConfirmation:
+                    if ( Authenticator == null )
+                    {
+                        throw new AuthenticationException( "Authentication failed", EResult.AccountLoginDeniedNeedTwoFactor );
+                    }
                     pollLoop = true;
                     break;
 
