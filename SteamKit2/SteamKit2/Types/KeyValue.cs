@@ -281,7 +281,7 @@ namespace SteamKit2
             {
                 if ( key == null )
                 {
-                    throw new ArgumentNullException( nameof(key) );
+                    throw new ArgumentNullException( nameof( key ) );
                 }
 
                 var child = this.Children
@@ -298,7 +298,7 @@ namespace SteamKit2
             {
                 if ( key == null )
                 {
-                    throw new ArgumentNullException( nameof(key) );
+                    throw new ArgumentNullException( nameof( key ) );
                 }
 
                 var existingChild = this.Children
@@ -519,9 +519,9 @@ namespace SteamKit2
         /// <param name="path">The path to the file to load.</param>
         /// <param name="keyValue">The resulting <see cref="KeyValue"/> object if the load was successful, or <c>null</c> if unsuccessful.</param>
         /// <returns><c>true</c> if the load was successful, or <c>false</c> on failure.</returns>
-        public static bool TryLoadAsBinary( string path, [NotNullWhen(true)] out KeyValue? keyValue )
+        public static bool TryLoadAsBinary( string path, [NotNullWhen( true )] out KeyValue? keyValue )
         {
-            keyValue = LoadFromFile(path, true);
+            keyValue = LoadFromFile( path, true );
             return keyValue != null;
         }
 
@@ -575,7 +575,7 @@ namespace SteamKit2
         {
             if ( input == null )
             {
-                throw new ArgumentNullException( nameof(input) );
+                throw new ArgumentNullException( nameof( input ) );
             }
 
             byte[] bytes = Encoding.UTF8.GetBytes( input );
@@ -607,7 +607,7 @@ namespace SteamKit2
         {
             if ( input == null )
             {
-                throw new ArgumentNullException( nameof(input) );
+                throw new ArgumentNullException( nameof( input ) );
             }
 
             this.Children = new List<KeyValue>();
@@ -706,6 +706,20 @@ namespace SteamKit2
             }
         }
 
+        public string SaveToText()
+        {
+            using MemoryStream stream = new MemoryStream();
+            RecursiveSaveTextToFile( stream );
+            return Encoding.Default.GetString( stream.ToArray() );
+        }
+
+        public byte[] SaveToBin()
+        {
+            using MemoryStream stream = new MemoryStream();
+            RecursiveSaveBinaryToStream( stream );
+            return stream.ToArray();
+        }
+
         /// <summary>
         /// Saves this instance to a given <see cref="System.IO.Stream"/>.
         /// </summary>
@@ -715,10 +729,10 @@ namespace SteamKit2
         {
             if ( stream == null )
             {
-                throw new ArgumentNullException( nameof(stream) );
+                throw new ArgumentNullException( nameof( stream ) );
             }
 
-            if (asBinary)
+            if ( asBinary )
             {
                 RecursiveSaveBinaryToStream( stream );
             }
@@ -819,9 +833,9 @@ namespace SteamKit2
         {
             if ( input == null )
             {
-                throw new ArgumentNullException( nameof(input) );
+                throw new ArgumentNullException( nameof( input ) );
             }
-            
+
             return TryReadAsBinaryCore( input, this, null );
         }
 
@@ -839,7 +853,7 @@ namespace SteamKit2
                 }
 
                 current.Name = input.ReadNullTermString( Encoding.UTF8 );
-                
+
                 switch ( type )
                 {
                     case Type.None:
@@ -861,7 +875,7 @@ namespace SteamKit2
 
                     case Type.WideString:
                         {
-                            DebugLog.WriteLine( "KeyValue", "Encountered WideString type when parsing binary KeyValue, which is unsupported. Returning false.");
+                            DebugLog.WriteLine( "KeyValue", "Encountered WideString type when parsing binary KeyValue, which is unsupported. Returning false." );
                             return false;
                         }
 
@@ -897,9 +911,9 @@ namespace SteamKit2
                         }
                 }
 
-                if (parent != null)
+                if ( parent != null )
                 {
-                    parent.Children.Add(current);
+                    parent.Children.Add( current );
                 }
                 current = new KeyValue();
             }
