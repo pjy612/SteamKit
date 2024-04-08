@@ -65,7 +65,8 @@ namespace SteamKit2
                 { EMsg.ClientPICSProductInfoResponse, HandlePICSProductInfoResponse },
                 { EMsg.ClientUpdateGuestPassesList, HandleGuestPassList },
                 { EMsg.ClientGetCDNAuthTokenResponse, HandleCDNAuthTokenResponse },
-                { EMsg.ClientCheckAppBetaPasswordResponse, HandleCheckAppBetaPasswordResponse }
+                { EMsg.ClientCheckAppBetaPasswordResponse, HandleCheckAppBetaPasswordResponse },
+                { EMsg.ClientRequestEncryptedAppTicketResponse,HandleRequestEncryptedAppTicketResponse  }
             };
         }
 
@@ -342,6 +343,21 @@ namespace SteamKit2
             return new AsyncJob<LegacyGameKeyCallback>( this.Client, request.SourceJobID );
         }
 
+
+        public AsyncJob<RequestEncryptedAppTicketCallback> RequestEncryptedAppTicket( uint appid, byte[] userdata = null )
+        {
+            var request = new ClientMsgProtobuf<CMsgClientRequestEncryptedAppTicket>( EMsg.ClientRequestEncryptedAppTicket );
+            request.SourceJobID = Client.GetNextJobID();
+
+            request.Body.app_id = appid;
+            request.Body.userdata = userdata;
+
+            this.Client.Send( request );
+
+            return new AsyncJob<RequestEncryptedAppTicketCallback>( this.Client, request.SourceJobID );
+        }
+
+
         /// <summary>
         /// Handles a client message. This should not be called directly.
         /// </summary>
@@ -470,7 +486,14 @@ namespace SteamKit2
             var callback = new CheckAppBetaPasswordCallback( response.TargetJobID, response.Body );
             this.Client.PostCallback( callback );
         }
-        
+
+        void HandleRequestEncryptedAppTicketResponse( IPacketMsg packetMsg )
+        {
+            var ticketResponse = new ClientMsgProtobuf<CMsgClientRequestEncryptedAppTicketResponse>( packetMsg );
+
+            var callback = new RequestEncryptedAppTicketCallback( ticketResponse.TargetJobID, ticketResponse.Body );
+            this.Client.PostCallback( callback );
+        }
         #endregion
 
     }

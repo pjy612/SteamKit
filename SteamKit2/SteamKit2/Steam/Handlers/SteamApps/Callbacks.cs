@@ -513,7 +513,7 @@ namespace SteamKit2
                 /// </summary>
                 public Uri? HttpUri { get; set; }
 
-                public PICSProductInfo(){}
+                public PICSProductInfo() { }
 
                 internal PICSProductInfo( CMsgClientPICSProductInfoResponse parentResponse, CMsgClientPICSProductInfoResponse.AppInfo app_info )
                 {
@@ -777,6 +777,58 @@ namespace SteamKit2
                 foreach ( var password in msg.betapasswords )
                 {
                     BetaPasswords[ password.betaname ] = Utils.DecodeHexString( password.betapassword );
+                }
+            }
+        }
+
+        /// <summary>
+        /// This callback is received in response to calling <see cref="SteamApps.GetAppOwnershipTicket"/>.
+        /// </summary>
+        public sealed class RequestEncryptedAppTicketCallback : CallbackMsg
+        {
+            /// <summary>
+            /// Gets the result of requesting the ticket.
+            /// </summary>
+            public EResult Result { get; private set; }
+
+            /// <summary>
+            /// Gets the AppID this ticket is for.
+            /// </summary>
+            public uint AppID { get; private set; }
+
+            public sealed class EncryptedAppTicketData
+            {
+
+                public EncryptedAppTicketData( EncryptedAppTicket ticket )
+                {
+                    this.TicketVersionNo = ticket.ticket_version_no;
+                    this.Cb_EncryptedAppOwnershipTicket = ticket.cb_encrypted_appownershipticket;
+                    this.Cb_EncryptedUserData = ticket.cb_encrypteduserdata;
+                    this.Crc_EncryptedTicket = ticket.crc_encryptedticket;
+                    this.EncryptedTicket = ticket.encrypted_ticket;
+                }
+                public byte[] EncryptedTicket { get; private set; }
+
+                public uint Cb_EncryptedAppOwnershipTicket { get; private set; }
+                public uint Crc_EncryptedTicket { get; private set; }
+
+                public uint Cb_EncryptedUserData { get; private set; }
+
+                public uint TicketVersionNo { get; private set; }
+            }
+
+            public EncryptedAppTicket Ticket { get; private set; }
+
+
+            internal RequestEncryptedAppTicketCallback( JobID jobID, CMsgClientRequestEncryptedAppTicketResponse msg )
+            {
+                this.JobID = jobID;
+
+                this.Result = ( EResult )msg.eresult;
+                this.AppID = msg.app_id;
+                if ( msg.encrypted_app_ticket != null )
+                {
+                    this.Ticket = msg.encrypted_app_ticket;
                 }
             }
         }
