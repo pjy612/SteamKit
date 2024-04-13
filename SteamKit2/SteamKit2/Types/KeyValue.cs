@@ -513,6 +513,53 @@ namespace SteamKit2
             return LoadFromFile( path, false );
         }
 
+        public static bool TryLoadAsBinary( byte[] input, [NotNullWhen( true )] out KeyValue? keyValue )
+        {
+            keyValue = LoadFromStream( new MemoryStream( input ), true );
+            return keyValue != null;
+        }
+        static KeyValue? LoadFromStream( Stream input, bool asBinary )
+        {
+            var kv = new KeyValue();
+
+            if ( asBinary )
+            {
+                if ( kv.TryReadAsBinary( input ) == false )
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                if ( kv.ReadAsText( input ) == false )
+                {
+                    return null;
+                }
+            }
+
+            return kv;
+
+        }
+
+        public static KeyValue? LoadFromByte( byte[] input )
+        {
+            if ( input == null )
+            {
+                throw new ArgumentNullException( nameof( input ) );
+            }
+            using ( MemoryStream stream = new MemoryStream( input ) )
+            {
+                try
+                {
+                    return KeyValue.LoadFromStream( stream, true );
+                }
+                catch ( Exception )
+                {
+                    return null;
+                }
+            }
+        }
+
         /// <summary>
         /// Attempts to load the given filename as a binary <see cref="KeyValue"/>.
         /// </summary>
