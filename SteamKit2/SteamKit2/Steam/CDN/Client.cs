@@ -166,6 +166,7 @@ namespace SteamKit2.CDN
         async Task<byte[]> DoRawCommandAsync( Server server, string command, Server? proxyServer )
         {
             var url = BuildCommand( server, command, proxyServer );
+            DebugLog.WriteLine( nameof( CDN ), $"HttpRequest:{url}" );
             using var request = new HttpRequestMessage( HttpMethod.Get, url );
 
             using var cts = new CancellationTokenSource();
