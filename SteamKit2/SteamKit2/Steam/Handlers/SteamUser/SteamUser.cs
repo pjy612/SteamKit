@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SteamKit2.Internal;
 
 namespace SteamKit2
@@ -123,6 +124,8 @@ namespace SteamKit2
             public string? MachineName { get; set; } = $"{Environment.MachineName} (SteamKit2)";
 
             public bool NotAuth { get; set; } = false;
+            public byte[]? MachineId { get; set; }
+
             /// <summary>
             /// Initializes a new instance of the <see cref="LogOnDetails"/> class.
             /// </summary>
@@ -365,7 +368,15 @@ namespace SteamKit2
             logon.Body.client_package_version = 1771; // todo: determine if this is still required
             logon.Body.supports_rate_limit_response = true;
             logon.Body.machine_name = details.MachineName;
-            logon.Body.machine_id = HardwareUtils.GetMachineID( Client.Configuration.MachineInfoProvider );
+            if ( details.MachineId != null && details.MachineId.Any() )
+            {
+                logon.Body.machine_id = details.MachineId;
+            }
+            else
+            {
+                logon.Body.machine_id = HardwareUtils.GetMachineID( Client.Configuration.MachineInfoProvider );
+            }
+            
 
             // steam guard 
             logon.Body.auth_code = details.AuthCode;

@@ -107,12 +107,12 @@ namespace SteamKit2
             return Encoding.UTF8.GetBytes( guid.ToString()! );
         }
 
-        public byte[] GetMacAddress() => null;
+        //public byte[] GetMacAddress() => null;
         // On windows, the steam client hashes a 16 bytes struct
         // containing the mac address of the first *Physical* network adapter padded to 8 bytes (mac addresses are 6 bytes)
         // and the mac address of the second *Physical* network adapter also padded to 8 bytes.
         // So the hashed data ends up being (6bytes of mac address, 10 bytes of zeroes)
-        public byte[] GetMacAddress2()
+        public byte[] GetMacAddress()
         {
             // This part of the code finds  *Physical* network interfaces
             // based on : https://social.msdn.microsoft.com/Forums/en-US/46c86903-3698-41bc-b081-fcf444e8a127/get-the-ip-address-of-the-physical-network-card-?forum=winforms
