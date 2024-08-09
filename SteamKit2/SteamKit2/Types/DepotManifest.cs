@@ -4,6 +4,7 @@
  */
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Hashing;
@@ -40,7 +41,7 @@ namespace SteamKit2
             /// <summary>
             /// Gets or sets the expected Adler32 checksum of this chunk.
             /// </summary>
-            public byte[]? Checksum { get; set; }
+            public uint Checksum { get; set; }
             /// <summary>
             /// Gets or sets the chunk offset.
             /// </summary>
@@ -63,7 +64,7 @@ namespace SteamKit2
             {
             }
 
-            internal ChunkData( byte[] id, byte[] checksum, ulong offset, uint comp_length, uint uncomp_length )
+            internal ChunkData( byte[] id, uint checksum, ulong offset, uint comp_length, uint uncomp_length )
             {
                 this.ChunkID = id;
                 this.Checksum = checksum;
@@ -194,21 +195,70 @@ namespace SteamKit2
             }
 
             DebugLog.Assert( Files != null, nameof( DepotManifest ), "Files was null when attempting to decrypt filenames." );
+            DebugLog.Assert( encryptionKey.Length == 32, nameof( DepotManifest ), $"Decrypt filnames used with non 32 byte key!" );
 
-            foreach (var file in Files)
+            // This was copypasted from <see cref="CryptoHelper.SymmetricDecrypt"/> to avoid allocating Aes instance for every filename
+            using var aes = Aes.Create();
+            aes.BlockSize = 128;
+            aes.KeySize = 256;
+            aes.Key = encryptionKey;
+
+            Span<byte> iv = stackalloc byte[ 16 ];
+            var filenameLength = 0;
+            var bufferDecoded = ArrayPool<byte>.Shared.Rent( 256 );
+            var bufferDecrypted = ArrayPool<byte>.Shared.Rent( 256 );
+
+            try
             {
-                byte[] enc_filename = Convert.FromBase64String(file.FileName);
-                byte[] filename;
-                try
+                foreach ( var file in Files )
                 {
-                    filename = CryptoHelper.SymmetricDecrypt(enc_filename, encryptionKey);
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
+                    var decodedLength = file.FileName.Length / 4 * 3; // This may be higher due to padding
 
-                file.FileName = Encoding.UTF8.GetString( filename ).TrimEnd( '\0' ).Replace(altDirChar, Path.DirectorySeparatorChar);
+                    // Majority of filenames are short, even when they are encrypted and base64 encoded,
+                    // so this resize will be hit *very* rarely
+                    if ( decodedLength > bufferDecoded.Length )
+                    {
+                        ArrayPool<byte>.Shared.Return( bufferDecoded );
+                        bufferDecoded = ArrayPool<byte>.Shared.Rent( decodedLength );
+
+                        ArrayPool<byte>.Shared.Return( bufferDecrypted );
+                        bufferDecrypted = ArrayPool<byte>.Shared.Rent( decodedLength );
+                    }
+
+                    if ( !Convert.TryFromBase64Chars( file.FileName, bufferDecoded, out decodedLength ) )
+                    {
+                        DebugLog.Assert( false, nameof( DepotManifest ), "Failed to base64 decode the filename." );
+                        return false;
+                    }
+
+                    try
+                    {
+                        var encryptedFilename = bufferDecoded.AsSpan()[ ..decodedLength ];
+                        aes.DecryptEcb( encryptedFilename[ ..iv.Length ], iv, PaddingMode.None );
+                        filenameLength = aes.DecryptCbc( encryptedFilename[ iv.Length.. ], iv, bufferDecrypted, PaddingMode.PKCS7 );
+                    }
+                    catch ( Exception )
+                    {
+                        DebugLog.Assert( false, nameof( DepotManifest ), "Failed to decrypt the filename." );
+                        return false;
+                    }
+
+                    // Trim the ending null byte, safe for UTF-8
+                    if ( filenameLength > 0 && bufferDecrypted[ filenameLength ] == 0 )
+                    {
+                        filenameLength--;
+                    }
+
+                    // ASCII is subset of UTF-8, so it safe to replace the raw bytes here
+                    MemoryExtensions.Replace( bufferDecrypted.AsSpan(), ( byte )altDirChar, ( byte )Path.DirectorySeparatorChar );
+
+                    file.FileName = Encoding.UTF8.GetString( bufferDecrypted, 0, filenameLength );
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return( bufferDecoded );
+                ArrayPool<byte>.Shared.Return( bufferDecrypted );
             }
 
             // Sort file entries alphabetically because that's what Steam does
@@ -217,6 +267,16 @@ namespace SteamKit2
 
             FilenamesEncrypted = false;
             return true;
+        }
+
+        /// <summary>
+        /// Serializes depot manifest and saves the output to a file.
+        /// </summary>
+        /// <param name="filename">Output file name.</param>
+        public void SaveToFile( string filename )
+        {
+            using var fs = File.Open( filename, FileMode.Create );
+            Serialize( fs );
         }
 
         /// <summary>
@@ -262,23 +322,17 @@ namespace SteamKit2
 
                         case DepotManifest.PROTOBUF_PAYLOAD_MAGIC:
                             uint payload_length = br.ReadUInt32();
-                            byte[] payload_bytes = br.ReadBytes( (int)payload_length );
-                            using ( var ms_payload = new MemoryStream( payload_bytes ) ) 
-                                payload = Serializer.Deserialize<ContentManifestPayload>( ms_payload );
+                            payload = Serializer.Deserialize<ContentManifestPayload>( ms, length: payload_length );
                             break;
 
                         case DepotManifest.PROTOBUF_METADATA_MAGIC:
                             uint metadata_length = br.ReadUInt32();
-                            byte[] metadata_bytes = br.ReadBytes( (int)metadata_length );
-                            using ( var ms_metadata = new MemoryStream( metadata_bytes ) )
-                                metadata = Serializer.Deserialize<ContentManifestMetadata>( ms_metadata );
+                            metadata = Serializer.Deserialize<ContentManifestMetadata>( ms, length: metadata_length );
                             break;
 
                         case DepotManifest.PROTOBUF_SIGNATURE_MAGIC:
                             uint signature_length = br.ReadUInt32();
-                            byte[] signature_bytes = br.ReadBytes( (int)signature_length );
-                            using ( var ms_signature = new MemoryStream( signature_bytes ) )
-                                signature = Serializer.Deserialize<ContentManifestSignature>( ms_signature );
+                            signature = Serializer.Deserialize<ContentManifestSignature>( ms, length: signature_length );
                             break;
 
                         case DepotManifest.PROTOBUF_ENDOFMANIFEST_MAGIC:
@@ -317,7 +371,7 @@ namespace SteamKit2
 
                 foreach (var chunk in file_mapping.Chunks)
                 {
-                    filedata.Chunks.Add( new ChunkData( chunk.ChunkGID!, chunk.Checksum!, chunk.Offset, chunk.CompressedSize, chunk.DecompressedSize ) );
+                    filedata.Chunks.Add( new ChunkData( chunk.ChunkGID!, chunk.Checksum, chunk.Offset, chunk.CompressedSize, chunk.DecompressedSize ) );
                 }
 
                 Files.Add(filedata);
@@ -334,7 +388,7 @@ namespace SteamKit2
 
                 foreach (var chunk in file_mapping.chunks)
                 {
-                    filedata.Chunks.Add( new ChunkData( chunk.sha, BitConverter.GetBytes(chunk.crc), chunk.offset, chunk.cb_compressed, chunk.cb_original ) );
+                    filedata.Chunks.Add( new ChunkData( chunk.sha, chunk.crc, chunk.offset, chunk.cb_compressed, chunk.cb_original ) );
                 }
 
                 Files.Add(filedata);
@@ -384,17 +438,18 @@ namespace SteamKit2
             foreach ( var file in Files )
             {
                 var protofile = new ContentManifestPayload.FileMapping();
-                protofile.filename = file.FileName.Replace( '/', '\\' );
                 protofile.size = file.TotalSize;
                 protofile.flags = ( uint )file.Flags;
                 if ( FilenamesEncrypted )
                 {
                     // Assume the name is unmodified
+                    protofile.filename = file.FileName;
                     protofile.sha_filename = file.FileNameHash;
                 }
                 else
                 {
-                    protofile.sha_filename = SHA1.HashData( Encoding.UTF8.GetBytes( file.FileName.Replace( '/', '\\' ).ToLower() ) );
+                    protofile.filename = file.FileName.Replace( '/', '\\' );
+                    protofile.sha_filename = SHA1.HashData( Encoding.UTF8.GetBytes( file.FileName.Replace( '/', '\\' ).ToLowerInvariant() ) );
                 }
                 protofile.sha_content = file.FileHash;
                 if ( !string.IsNullOrWhiteSpace( file.LinkTarget ) )
@@ -406,7 +461,7 @@ namespace SteamKit2
                 {
                     var protochunk = new ContentManifestPayload.FileMapping.ChunkData();
                     protochunk.sha = chunk.ChunkID;
-                    protochunk.crc = BitConverter.ToUInt32( chunk.Checksum!, 0 );
+                    protochunk.crc = chunk.Checksum;
                     protochunk.offset = chunk.Offset;
                     protochunk.cb_original = chunk.UncompressedLength;
                     protochunk.cb_compressed = chunk.CompressedLength;
@@ -458,7 +513,7 @@ namespace SteamKit2
                 Serializer.Serialize<ContentManifestPayload>( ms_payload, payload );
                 bw.Write( DepotManifest.PROTOBUF_PAYLOAD_MAGIC );
                 bw.Write( ( int )ms_payload.Length );
-                bw.Write( ms_payload.ToArray() );
+                bw.Write( ms_payload.GetBuffer().AsSpan( 0, ( int )ms_payload.Length ) );
             }
 
             // Write Protobuf metadata
@@ -467,7 +522,7 @@ namespace SteamKit2
                 Serializer.Serialize<ContentManifestMetadata>( ms_metadata, metadata );
                 bw.Write( DepotManifest.PROTOBUF_METADATA_MAGIC );
                 bw.Write( ( int )ms_metadata.Length );
-                bw.Write( ms_metadata.ToArray() );
+                bw.Write( ms_metadata.GetBuffer().AsSpan( 0, ( int )ms_metadata.Length ) );
             }
 
             // Write empty signature section

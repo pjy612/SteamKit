@@ -29,7 +29,7 @@ namespace SteamKit2.Discovery
     /// </summary>
     public class SmartCMServerList
     {
-        [DebuggerDisplay("ServerInfo ({EndPoint}, {Protocol}, Bad: {LastBadConnectionDateTimeUtc.HasValue})")]
+        [DebuggerDisplay( "ServerInfo ({Record.EndPoint}, {Protocol}, Bad: {LastBadConnectionTimeUtc.HasValue})" )]
         class ServerInfo
         {
             public ServerInfo( ServerRecord record, ProtocolTypes protocolType )
@@ -204,7 +204,7 @@ namespace SteamKit2.Discovery
             lock ( listLock )
             {
                 ServerInfo[] serverInfos;
-                
+
                 if ( quality == ServerQuality.Good )
                 {
                     serverInfos = servers.Where( x => x.Record.EndPoint.Equals( endPoint ) && x.Protocol.HasFlagsFast( protocolTypes ) ).ToArray();
@@ -213,7 +213,7 @@ namespace SteamKit2.Discovery
                 {
                     // If we're marking this server for any failure, mark all endpoints for the host at the same time
                     var host = NetHelpers.ExtractEndpointHost( endPoint ).host;
-                    serverInfos = servers.Where( x => x.Record.GetHost().Equals( host )).ToArray();
+                    serverInfos = servers.Where( x => x.Record.GetHost().Equals( host, StringComparison.Ordinal ) ).ToArray();
                 }
 
                 if ( serverInfos.Length == 0 )
@@ -225,7 +225,7 @@ namespace SteamKit2.Discovery
                 {
                     MarkServerCore( serverInfo, quality );
                 }
-                
+
                 return true;
             }
         }

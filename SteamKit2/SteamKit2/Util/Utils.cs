@@ -17,7 +17,7 @@ namespace SteamKit2
         /// <summary>
         /// Performs an Adler32 on the given input
         /// </summary>
-        public static byte[] AdlerHash( byte[] input )
+        public static uint AdlerHash( byte[] input )
         {
             ArgumentNullException.ThrowIfNull( input );
 
@@ -28,12 +28,12 @@ namespace SteamKit2
                 b = ( b + a ) % 65521;
             }
 
-            return BitConverter.GetBytes( a | ( b << 16 ) );
+            return a | ( b << 16 );
         }
 
         public static string EncodeHexString(byte[] input)
         {
-            return Convert.ToHexString(input).ToLower();
+            return Convert.ToHexString(input).ToLowerInvariant();
         }
 
         [return: NotNullIfNotNull( nameof( hex ) )]
