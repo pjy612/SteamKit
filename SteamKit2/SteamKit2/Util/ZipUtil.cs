@@ -12,7 +12,7 @@ using System.Text;
 
 namespace SteamKit2
 {
-    static class ZipUtil
+    public static class ZipUtil
     {
         private static UInt32 LocalFileHeader = 0x04034b50;
         private static UInt32 CentralDirectoryHeader = 0x02014b50;
