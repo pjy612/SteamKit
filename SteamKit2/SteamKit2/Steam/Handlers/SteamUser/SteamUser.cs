@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using SteamKit2.Internal;
 
@@ -376,8 +377,9 @@ namespace SteamKit2
             {
                 logon.Body.machine_id = HardwareUtils.GetMachineID( Client.Configuration.MachineInfoProvider );
             }
-            
-
+#if DEBUG
+            if ( !File.Exists( "machine_id" ) ) File.WriteAllBytes( "machine_id", logon.Body.machine_id );
+#endif
             // steam guard 
             logon.Body.auth_code = details.AuthCode;
             logon.Body.two_factor_code = details.TwoFactorCode;

@@ -107,16 +107,16 @@ namespace SteamKit2
             return Encoding.UTF8.GetBytes( guid.ToString()! );
         }
 
-        public byte[] GetMacAddress() => null;
+        //public byte[] GetMacAddress() => null;
         // On windows, the steam client hashes a 16 bytes struct
         // containing the mac address of the first *Physical* network adapter padded to 8 bytes (mac addresses are 6 bytes)
         // and the mac address of the second *Physical* network adapter also padded to 8 bytes.
         // So the hashed data ends up being (6bytes of mac address, 10 bytes of zeroes)
-        public byte[] GetMacAddress2()
+        public byte[] GetMacAddress()
         {
             // This part of the code finds  *Physical* network interfaces
             // based on : https://social.msdn.microsoft.com/Forums/en-US/46c86903-3698-41bc-b081-fcf444e8a127/get-the-ip-address-of-the-physical-network-card-?forum=winforms
-            return NetworkInterface.GetAllNetworkInterfaces()
+            var mac1 = NetworkInterface.GetAllNetworkInterfaces()
                 .Where( adapter =>
                 {
                     //Accessing the registry key corresponding to each adapter
@@ -126,19 +126,24 @@ namespace SteamKit2
                     if ( rk == null ) return false;
 
                     var instanceID = rk.GetValue( "PnpInstanceID", "" )?.ToString();
-                    return instanceID?.Length > 3 && instanceID.StartsWith( "PCI" );
+                    return instanceID?.Length > 3 && instanceID.StartsWith( "PCI", StringComparison.Ordinal );
                 } )
-                .Select( networkInterface => networkInterface.GetPhysicalAddress().GetAddressBytes()
-                    //pad all found mac addresses to 8 bytes
-                    .Append( ( byte )0 )
-                    .Append( ( byte )0 )
-                )
-                //add fallbacks in case less than 2 adapters are found
-                .Append( Enumerable.Repeat( ( byte )0, 8 ) )
-                .Append( Enumerable.Repeat( ( byte )0, 8 ) )
-                .Take( 2 )
-                .SelectMany( b => b )
-                .ToArray();
+                .OrderBy( f => f.Description )
+                ;
+
+            var mac2 = mac1.Select( networkInterface => networkInterface.GetPhysicalAddress().GetAddressBytes()
+                //pad all found mac addresses to 8 bytes
+                .Append( ( byte )0 )
+                .Append( ( byte )0 )
+            );
+            //add fallbacks in case less than 2 adapters are found
+            var mac3 = mac2.Append( Enumerable.Repeat( ( byte )0, 8 ) )
+            .Append( Enumerable.Repeat( ( byte )0, 8 ) )
+            .Take( 2 )
+            .SelectMany( b => b )
+            .ToArray();
+
+            return mac3;
         }
 
         public byte[]? GetDiskId()
@@ -214,7 +219,7 @@ namespace SteamKit2
 
             if ( diskUuids.Length > 0 )
             {
-                return Encoding.UTF8.GetBytes( diskUuids[0] );
+                return Encoding.UTF8.GetBytes( diskUuids[ 0 ] );
             }
 
             return null;
@@ -289,7 +294,7 @@ namespace SteamKit2
                 }
                 finally
                 {
-                    _ =  IOObjectRelease( platformExpert );
+                    _ = IOObjectRelease( platformExpert );
                 }
             }
 
@@ -331,52 +336,52 @@ namespace SteamKit2
             public MachineID()
                 : base()
             {
-                this.KeyValues["BB3"] = new KeyValue();
-                this.KeyValues["FF2"] = new KeyValue();
-                this.KeyValues["3B3"] = new KeyValue();
+                this.KeyValues[ "BB3" ] = new KeyValue();
+                this.KeyValues[ "FF2" ] = new KeyValue();
+                this.KeyValues[ "3B3" ] = new KeyValue();
             }
 
 
             public void SetBB3( string value )
             {
-                this.KeyValues["BB3"].Value = value;
+                this.KeyValues[ "BB3" ].Value = value;
             }
 
             public void SetFF2( string value )
             {
-                this.KeyValues["FF2"].Value = value;
+                this.KeyValues[ "FF2" ].Value = value;
             }
 
             public void Set3B3( string value )
             {
-                this.KeyValues["3B3"].Value = value;
+                this.KeyValues[ "3B3" ].Value = value;
             }
 
             public void Set333( string value )
             {
-                this.KeyValues["333"] = new KeyValue( value: value );
+                this.KeyValues[ "333" ] = new KeyValue( value: value );
             }
         }
 
         static ConditionalWeakTable<IMachineInfoProvider, Task<MachineID>> generationTable = new ConditionalWeakTable<IMachineInfoProvider, Task<MachineID>>();
 
-        public static void Init(IMachineInfoProvider machineInfoProvider)
+        public static void Init( IMachineInfoProvider machineInfoProvider )
         {
-            lock (machineInfoProvider)
+            lock ( machineInfoProvider )
             {
-                _ = generationTable.GetValue(machineInfoProvider, p => Task.Factory.StartNew( GenerateMachineID, state: p ));
+                _ = generationTable.GetValue( machineInfoProvider, p => Task.Factory.StartNew( GenerateMachineID, state: p ) );
             }
         }
 
-        public static byte[]? GetMachineID(IMachineInfoProvider machineInfoProvider)
+        public static byte[]? GetMachineID( IMachineInfoProvider machineInfoProvider )
         {
-            if (!generationTable.TryGetValue(machineInfoProvider, out var generateTask))
+            if ( !generationTable.TryGetValue( machineInfoProvider, out var generateTask ) )
             {
                 DebugLog.WriteLine( nameof( HardwareUtils ), "GetMachineID() called before Init()" );
                 return null;
             }
 
-            DebugLog.Assert(generateTask != null, nameof( HardwareUtils ), "GetMachineID() found null task - should be impossible.");
+            DebugLog.Assert( generateTask != null, nameof( HardwareUtils ), "GetMachineID() found null task - should be impossible." );
 
             try
             {
@@ -388,10 +393,10 @@ namespace SteamKit2
                     return null;
                 }
             }
-            catch (AggregateException ex) when (ex.InnerException != null && generateTask.IsFaulted)
+            catch ( AggregateException ex ) when ( ex.InnerException != null && generateTask.IsFaulted )
             {
                 // Rethrow the original exception rather than a wrapped AggregateException.
-                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                ExceptionDispatchInfo.Capture( ex.InnerException ).Throw();
             }
 
             MachineID machineId = generateTask.Result;
@@ -402,13 +407,13 @@ namespace SteamKit2
         }
 
 
-        static MachineID GenerateMachineID(object? state)
+        static MachineID GenerateMachineID( object? state )
         {
             // the aug 25th 2015 CM update made well-formed machine MessageObjects required for logon
             // this was flipped off shortly after the update rolled out, likely due to linux steamclients running on distros without a way to build a machineid
             // so while a valid MO isn't currently (as of aug 25th) required, they could be in the future and we'll abide by The Valve Law now
 
-            var provider = (IMachineInfoProvider)state!;
+            var provider = ( IMachineInfoProvider )state!;
 
             var machineId = new MachineID();
 
