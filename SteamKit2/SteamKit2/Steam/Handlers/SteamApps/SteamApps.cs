@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using SteamKit2.Internal;
 
 namespace SteamKit2
@@ -160,7 +161,7 @@ namespace SteamKit2
         /// <param name="sendAppChangelist">Whether to send app changes.</param>
         /// <param name="sendPackageChangelist">Whether to send package changes.</param>
         /// <returns>The Job ID of the request. This can be used to find the appropriate <see cref="PICSChangesCallback"/>.</returns>
-        public AsyncJob<PICSChangesCallback> PICSGetChangesSince( uint lastChangeNumber = 0, bool sendAppChangelist = true, bool sendPackageChangelist = false,uint? numAppInfoCached = null )
+        public AsyncJob<PICSChangesCallback> PICSGetChangesSince( uint lastChangeNumber = 0, bool sendAppChangelist = true, bool sendPackageChangelist = false, uint? numAppInfoCached = null )
         {
             var request = new ClientMsgProtobuf<CMsgClientPICSChangesSinceRequest>( EMsg.ClientPICSChangesSinceRequest );
             request.SourceJobID = Client.GetNextJobID();
@@ -209,12 +210,12 @@ namespace SteamKit2
         {
             if ( apps == null )
             {
-                throw new ArgumentNullException( nameof(apps) );
+                throw new ArgumentNullException( nameof( apps ) );
             }
 
             if ( packages == null )
             {
-                throw new ArgumentNullException( nameof(packages) );
+                throw new ArgumentNullException( nameof( packages ) );
             }
 
             var request = new ClientMsgProtobuf<CMsgClientPICSProductInfoRequest>( EMsg.ClientPICSProductInfoRequest );
@@ -272,6 +273,35 @@ namespace SteamKit2
             return new AsyncJob<CDNAuthTokenCallback>( this.Client, request.SourceJobID );
         }
 
+        public async Task<CDNAuthTokenCallback> GetCDNAuthToken( uint app, uint depot, string host_name )
+        {
+            CDNAuthTokenCallback? callback = new CDNAuthTokenCallback( 0, new CMsgClientGetCDNAuthTokenResponse() );
+            try
+            {
+                var request = new CContentServerDirectory_GetCDNAuthToken_Request()
+                {
+                    depot_id = depot,
+                    host_name = host_name,
+                    app_id = app
+                };
+                var unifiedMessages = Client.GetHandler<SteamUnifiedMessages>()!;
+                var contentService = unifiedMessages.CreateService<IContentServerDirectory>();
+                var message = await contentService.SendMessage( api => api.GetCDNAuthToken( request ) );
+                var response = message.GetDeserializedResponse<CContentServerDirectory_GetCDNAuthToken_Response>();
+                callback = new CDNAuthTokenCallback( 0, new CMsgClientGetCDNAuthTokenResponse()
+                {
+                    expiration_time = response.expiration_time,
+                    token = response.token,
+                    eresult = 1
+                } );
+            }
+            catch ( Exception e )
+            {
+                Console.WriteLine( e );
+            }
+            return callback;
+        }
+
         /// <summary>
         /// Request a free license for given appid, can be used for free on demand apps
         /// Results are returned in a <see cref="FreeLicenseCallback"/> callback.
@@ -294,7 +324,7 @@ namespace SteamKit2
         {
             if ( apps == null )
             {
-                throw new ArgumentNullException( nameof(apps) );
+                throw new ArgumentNullException( nameof( apps ) );
             }
 
             var request = new ClientMsgProtobuf<CMsgClientRequestFreeLicense>( EMsg.ClientRequestFreeLicense );
@@ -366,7 +396,7 @@ namespace SteamKit2
         {
             if ( packetMsg == null )
             {
-                throw new ArgumentNullException( nameof(packetMsg) );
+                throw new ArgumentNullException( nameof( packetMsg ) );
             }
 
             if ( !dispatchMap.TryGetValue( packetMsg.MsgType, out var handlerFunc ) )
@@ -383,14 +413,14 @@ namespace SteamKit2
         {
             var ticketResponse = new ClientMsgProtobuf<CMsgClientGetAppOwnershipTicketResponse>( packetMsg );
 
-            var callback = new AppOwnershipTicketCallback(ticketResponse.TargetJobID, ticketResponse.Body);
+            var callback = new AppOwnershipTicketCallback( ticketResponse.TargetJobID, ticketResponse.Body );
             this.Client.PostCallback( callback );
         }
         void HandleDepotKeyResponse( IPacketMsg packetMsg )
         {
             var keyResponse = new ClientMsgProtobuf<CMsgClientGetDepotDecryptionKeyResponse>( packetMsg );
 
-            var callback = new DepotKeyCallback(keyResponse.TargetJobID, keyResponse.Body);
+            var callback = new DepotKeyCallback( keyResponse.TargetJobID, keyResponse.Body );
             this.Client.PostCallback( callback );
         }
         void HandleLegacyGameKeyResponse( IPacketMsg packetMsg )
@@ -446,7 +476,7 @@ namespace SteamKit2
         {
             var tokensResponse = new ClientMsgProtobuf<CMsgClientPICSAccessTokenResponse>( packetMsg );
 
-            var callback = new PICSTokensCallback(tokensResponse.TargetJobID, tokensResponse.Body);
+            var callback = new PICSTokensCallback( tokensResponse.TargetJobID, tokensResponse.Body );
             this.Client.PostCallback( callback );
         }
         void HandlePICSChangesSinceResponse( IPacketMsg packetMsg )
@@ -479,7 +509,7 @@ namespace SteamKit2
             this.Client.PostCallback( callback );
         }
 
-        void HandleCheckAppBetaPasswordResponse(IPacketMsg packetMsg)
+        void HandleCheckAppBetaPasswordResponse( IPacketMsg packetMsg )
         {
             var response = new ClientMsgProtobuf<CMsgClientCheckAppBetaPasswordResponse>( packetMsg );
 
