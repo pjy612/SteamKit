@@ -37,9 +37,12 @@ namespace SteamKit2
             /// </summary>
             public bool UserInitiated { get; private set; }
 
-            internal DisconnectedCallback( bool userInitiated )
+            public EndPoint? EndPoint { get; }
+
+            internal DisconnectedCallback( bool userInitiated, EndPoint? endPoint )
             {
                 this.UserInitiated = userInitiated;
+                EndPoint = endPoint;
             }
         }
 

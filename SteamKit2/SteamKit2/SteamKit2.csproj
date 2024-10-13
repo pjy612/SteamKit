@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net8</TargetFrameworks>
     <AssemblyOriginatorKeyFile>SteamKit.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
     <Description>.NET library that aims to interoperate with the Steam network.</Description>
@@ -54,7 +54,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <PackageReference Include="protobuf-net" Version="3.2.26" />
+    <PackageReference Include="protobuf-net" Version="3.2.30" />
   </ItemGroup>
 
 </Project>

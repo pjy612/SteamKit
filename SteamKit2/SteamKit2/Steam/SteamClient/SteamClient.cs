@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using ProtoBuf;
 using SteamKit2.Authentication;
@@ -418,7 +419,7 @@ namespace SteamKit2
         /// <summary>
         /// Called when the client is physically disconnected from Steam3.
         /// </summary>
-        protected override void OnClientDisconnected( bool userInitiated )
+        protected override void OnClientDisconnected( bool userInitiated, EndPoint? endPoint = null )
         {
             base.OnClientDisconnected( userInitiated );
 
@@ -429,7 +430,7 @@ namespace SteamKit2
 
             ClearHandlerCaches();
 
-            PostCallback( new DisconnectedCallback( userInitiated ) );
+            PostCallback( new DisconnectedCallback( userInitiated , endPoint ) );
         }
 
 

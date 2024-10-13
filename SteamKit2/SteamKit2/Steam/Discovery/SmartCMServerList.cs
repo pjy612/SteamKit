@@ -29,7 +29,7 @@ namespace SteamKit2.Discovery
     /// </summary>
     public class SmartCMServerList
     {
-        [DebuggerDisplay("ServerInfo ({EndPoint}, {Protocol}, Bad: {LastBadConnectionDateTimeUtc.HasValue})")]
+        [DebuggerDisplay( "ServerInfo ({EndPoint}, {Protocol}, Bad: {LastBadConnectionDateTimeUtc.HasValue})" )]
         class ServerInfo
         {
             public ServerInfo( ServerRecord record, ProtocolTypes protocolType )
@@ -50,7 +50,7 @@ namespace SteamKit2.Discovery
         /// <exception cref="ArgumentNullException">The configuration object is null.</exception>
         public SmartCMServerList( SteamConfiguration configuration )
         {
-            this.configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            this.configuration = configuration ?? throw new ArgumentNullException( nameof( configuration ) );
 
             servers = new Collection<ServerInfo>();
             listLock = new object();
@@ -115,7 +115,7 @@ namespace SteamKit2.Discovery
                 DebugWrite( "Could not query SteamDirectory, falling back to cm0" );
                 var cm0 = await Dns.GetHostAddressesAsync( "cm0.steampowered.com" ).ConfigureAwait( false );
 
-                endpointList = cm0.Select( ipaddr => ServerRecord.CreateSocketServer( new IPEndPoint(ipaddr, 27017) ) ).ToList();
+                endpointList = cm0.Select( ipaddr => ServerRecord.CreateSocketServer( new IPEndPoint( ipaddr, 27017 ) ) ).ToList();
             }
 
             DebugWrite( "Resolved {0} servers", endpointList.Count );
@@ -158,7 +158,7 @@ namespace SteamKit2.Discovery
         {
             if ( endpointList == null )
             {
-                throw new ArgumentNullException( nameof(endpointList) );
+                throw new ArgumentNullException( nameof( endpointList ) );
             }
 
             lock ( listLock )
@@ -202,12 +202,12 @@ namespace SteamKit2.Discovery
             }
         }
 
-        internal bool TryMark( EndPoint endPoint, ProtocolTypes protocolTypes, ServerQuality quality )
+        public bool TryMark( EndPoint endPoint, ProtocolTypes protocolTypes, ServerQuality quality )
         {
             lock ( listLock )
             {
                 ServerInfo[] serverInfos;
-                
+
                 if ( quality == ServerQuality.Good )
                 {
                     serverInfos = servers.Where( x => x.Record.EndPoint.Equals( endPoint ) && x.Protocol.HasFlagsFast( protocolTypes ) ).ToArray();
@@ -216,7 +216,7 @@ namespace SteamKit2.Discovery
                 {
                     // If we're marking this server for any failure, mark all endpoints for the host at the same time
                     var host = NetHelpers.ExtractEndpointHost( endPoint ).host;
-                    serverInfos = servers.Where( x => x.Record.GetHost().Equals( host )).ToArray();
+                    serverInfos = servers.Where( x => x.Record.GetHost().Equals( host ) ).ToArray();
                 }
 
                 if ( serverInfos.Length == 0 )
@@ -228,7 +228,7 @@ namespace SteamKit2.Discovery
                 {
                     MarkServerCore( serverInfo, quality );
                 }
-                
+
                 return true;
             }
         }
@@ -238,19 +238,19 @@ namespace SteamKit2.Discovery
             switch ( quality )
             {
                 case ServerQuality.Good:
-                {
-                    if ( serverInfo.LastBadConnectionTimeUtc.HasValue )
                     {
-                        serverInfo.LastBadConnectionTimeUtc = null;
+                        if ( serverInfo.LastBadConnectionTimeUtc.HasValue )
+                        {
+                            serverInfo.LastBadConnectionTimeUtc = null;
+                        }
+                        break;
                     }
-                    break;
-                }
 
                 case ServerQuality.Bad:
-                {
+                    {
                         serverInfo.LastBadConnectionTimeUtc = DateTime.UtcNow;
-                    break;
-                }
+                        break;
+                    }
 
                 default:
                     throw new ArgumentOutOfRangeException( "quality" );
@@ -270,8 +270,8 @@ namespace SteamKit2.Discovery
                 // isn't a problem.
                 ResetOldScores();
 
-                var query = 
-                    from o in servers.Select((server, index) => new { server, index })
+                var query =
+                    from o in servers.Select( ( server, index ) => new { server, index } )
                     let server = o.server
                     let index = o.index
                     where server.Protocol.HasFlagsFast( supportedProtocolTypes )
@@ -279,7 +279,7 @@ namespace SteamKit2.Discovery
                     orderby lastBadConnectionTime, index
                     select new { EndPoint = server.Record.EndPoint, Protocol = server.Protocol };
                 var result = query.FirstOrDefault();
-                
+
                 if ( result == null )
                 {
                     return null;
@@ -328,12 +328,29 @@ namespace SteamKit2.Discovery
 
             if ( !WaitForServersFetched() )
             {
-                return new ServerRecord[0];
+                return new ServerRecord[ 0 ];
             }
 
             lock ( listLock )
             {
-                endPoints = servers.Select(s => s.Record).Distinct().ToArray();
+                endPoints = servers.Select( s => s.Record ).Distinct().ToArray();
+            }
+
+            return endPoints;
+        }
+
+        public ServerRecord[] GetBadEndPoints()
+        {
+            ServerRecord[] endPoints;
+
+            if ( !WaitForServersFetched() )
+            {
+                return new ServerRecord[ 0 ];
+            }
+
+            lock ( listLock )
+            {
+                endPoints = servers.Where( s => s.LastBadConnectionTimeUtc.HasValue ).Select( s => s.Record ).Distinct().ToArray();
             }
 
             return endPoints;
@@ -341,7 +358,7 @@ namespace SteamKit2.Discovery
 
         static void DebugWrite( string msg, params object[] args )
         {
-            DebugLog.WriteLine( "ServerList", msg, args);
+            DebugLog.WriteLine( "ServerList", msg, args );
         }
     }
 }

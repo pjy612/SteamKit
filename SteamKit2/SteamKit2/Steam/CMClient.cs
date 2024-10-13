@@ -404,7 +404,7 @@ namespace SteamKit2.Internal
         /// <summary>
         /// Called when the client is physically disconnected from Steam3.
         /// </summary>
-        protected virtual void OnClientDisconnected( bool userInitiated )
+        protected virtual void OnClientDisconnected( bool userInitiated, EndPoint? endPoint = null )
         {
         }
 
@@ -468,7 +468,7 @@ namespace SteamKit2.Internal
 
             heartBeatFunc.Stop();
 
-            OnClientDisconnected( userInitiated: e.UserInitiated || ExpectDisconnection );
+            OnClientDisconnected( userInitiated: e.UserInitiated || ExpectDisconnection, connectionRelease.CurrentEndPoint );
         }
 
         internal static IPacketMsg? GetPacketMsg( byte[] data, ILogContext log )
