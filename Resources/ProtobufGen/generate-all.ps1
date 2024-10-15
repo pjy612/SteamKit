@@ -13,7 +13,7 @@ param([string[]]$ProtoDir)
 
 $ProtoGenSrc = Join-Path $PSScriptRoot 'ProtobufGen'
 $ProtoGenDll = Join-Path $ProtoGenSrc '\bin\Debug\ProtobufGen.dll'
-$ProtoBase = Join-Path $PSScriptRoot '..\ProtoBufs'
+$ProtoBase = Join-Path $PSScriptRoot '..\Protobufs'
 $SK2Base = Join-Path $PSScriptRoot '..\..\SteamKit2\SteamKit2\Base\Generated'
 
 & dotnet build --configuration Debug $ProtoGenSrc
@@ -33,6 +33,15 @@ $params = $CommonParams + @(
 
 & dotnet $ProtoGenDll $params > $null
 
+# protobuf dumper descriptor
+Set-Location -LiteralPath (Join-Path $ProtoBase 'google\protobuf')
+$params = $CommonParams + @(
+    '--proto', "descriptor.proto",
+    '--output', (Join-Path $PSScriptRoot '..\ProtobufDumper\ProtobufDumper\Descriptor.cs'),
+    '--namespace', "google.protobuf"
+    )
+
+#& dotnet $ProtoGenDll $params > $null
 
 $protos | % {
     Set-Location -LiteralPath (Join-Path $ProtoBase $_.ProtoDir)

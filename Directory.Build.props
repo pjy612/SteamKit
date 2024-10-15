@@ -28,7 +28,10 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>portable</DebugType>
         <Deterministic>true</Deterministic>
         <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+        <TreatWarningsAsErrors Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</TreatWarningsAsErrors>
     </PropertyGroup>
 </Project>
