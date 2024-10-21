@@ -17,10 +17,8 @@ namespace SteamKit2
         /// <summary>
         /// Performs an Adler32 on the given input
         /// </summary>
-        public static byte[] AdlerHash( byte[] input )
+        public static uint AdlerHash( ReadOnlySpan<byte> input )
         {
-            ArgumentNullException.ThrowIfNull( input );
-
             uint a = 0, b = 0;
             for ( int i = 0; i < input.Length; i++ )
             {
@@ -28,12 +26,12 @@ namespace SteamKit2
                 b = ( b + a ) % 65521;
             }
 
-            return BitConverter.GetBytes( a | ( b << 16 ) );
+            return a | ( b << 16 );
         }
 
         public static string EncodeHexString(byte[] input)
         {
-            return Convert.ToHexString(input).ToLower();
+            return Convert.ToHexString(input).ToLowerInvariant();
         }
 
         [return: NotNullIfNotNull( nameof( hex ) )]
@@ -143,6 +141,7 @@ namespace SteamKit2
                     21 => EOSType.MacOS12, // Monterey
                     22 => EOSType.MacOS13, // Ventura
                     23 => EOSType.MacOS14, // Sonoma
+                    24 => EOSType.MacOS15, // Sequoia
                     _ => EOSType.MacOSUnknown,
                 },
 

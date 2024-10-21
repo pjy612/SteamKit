@@ -91,6 +91,16 @@ namespace SteamKit2.GC.CSGO.Internal
         private string __pbn__instance_name;
 
         [global::ProtoBuf.ProtoMember(3)]
+        public ulong context
+        {
+            get => __pbn__context.GetValueOrDefault();
+            set => __pbn__context = value;
+        }
+        public bool ShouldSerializecontext() => __pbn__context != null;
+        public void Resetcontext() => __pbn__context = null;
+        private ulong? __pbn__context;
+
+        [global::ProtoBuf.ProtoMember(4)]
         public ulong id
         {
             get => __pbn__id.GetValueOrDefault();
@@ -169,6 +179,9 @@ namespace SteamKit2.GC.CSGO.Internal
         public bool ShouldSerializerequest() => __pbn__request != null;
         public void Resetrequest() => __pbn__request = null;
         private uint? __pbn__request;
+
+        [global::ProtoBuf.ProtoMember(3)]
+        public global::System.Collections.Generic.List<ulong> extra_data { get; } = new global::System.Collections.Generic.List<ulong>();
 
     }
 
@@ -372,12 +385,16 @@ namespace SteamKit2.GC.CSGO.Internal
         k_EGCItemCustomizationNotification_StatTrakSwap = 1088,
         k_EGCItemCustomizationNotification_RemovePatch = 1089,
         k_EGCItemCustomizationNotification_ApplyPatch = 1090,
+        k_EGCItemCustomizationNotification_ApplyKeychain = 1091,
+        k_EGCItemCustomizationNotification_RemoveKeychain = 1092,
         k_EGCItemCustomizationNotification_ActivateFanToken = 9178,
         k_EGCItemCustomizationNotification_ActivateOperationCoin = 9179,
         k_EGCItemCustomizationNotification_GraffitiUnseal = 9185,
         k_EGCItemCustomizationNotification_GenerateSouvenir = 9204,
         k_EGCItemCustomizationNotification_ClientRedeemMissionReward = 9209,
         k_EGCItemCustomizationNotification_ClientRedeemFreeReward = 9219,
+        k_EGCItemCustomizationNotification_XpShopUseTicket = 9221,
+        k_EGCItemCustomizationNotification_XpShopAckTracks = 9222,
     }
 
 }

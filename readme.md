@@ -1,7 +1,7 @@
 # SteamKit2
 [![Build Status (CI/CD)](https://github.com/SteamRE/SteamKit/workflows/CI/CD/badge.svg?branch=master&event=push)](https://github.com/SteamRE/SteamKit/actions?query=workflow%3ACI%2FCD)
 [![NuGet](https://img.shields.io/nuget/v/SteamKit2.svg)](https://www.nuget.org/packages/SteamKit2/)
-
+[![codecov](https://codecov.io/gh/SteamRE/SteamKit/branch/master/graph/badge.svg?token=qkJCxZI6rd)](https://codecov.io/gh/SteamRE/SteamKit)
 
 SteamKit2 is a .NET library designed to interoperate with Valve's [Steam network](https://store.steampowered.com/about). It aims to provide a simple, yet extensible, interface to perform various actions on the network.
 
@@ -40,7 +40,10 @@ If you're using the SteamKit2 NuGet package, dependencies should be resolved for
 
 To compile SteamKit2, [.NET 8.0 SDK](https://dot.net/) is required.
 
-## Contact
+## Discussions
+
+If you have questions, [use the Github discussions](https://github.com/SteamRE/SteamKit/discussions) section,
+also try searching for an existing discussion.
 
 IRC: irc.libera.chat / #steamre ([join via webchat](https://web.libera.chat/#steamre))
 

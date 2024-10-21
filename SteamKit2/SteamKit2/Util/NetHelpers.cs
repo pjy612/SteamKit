@@ -9,13 +9,14 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using SteamKit2.Internal;
 
 namespace SteamKit2
 {
     static class NetHelpers
     {
-        public static IPAddress GetLocalIP(Socket activeSocket)
+        public static IPAddress GetLocalIP( Socket activeSocket )
         {
             var ipEndPoint = activeSocket.LocalEndPoint as IPEndPoint;
 
@@ -27,18 +28,22 @@ namespace SteamKit2
 
         public static IPAddress GetIPAddress( uint ipAddr )
         {
-            byte[] addrBytes = BitConverter.GetBytes( ipAddr );
-            Array.Reverse( addrBytes );
-
-            return new IPAddress( addrBytes );
+            return new IPAddress(
+                ( ( ipAddr & 0xFF000000 ) >> 24 ) |
+                ( ( ipAddr & 0x00FF0000 ) >> 8 ) |
+                ( ( ipAddr & 0x0000FF00 ) << 8 ) |
+                ( ( ipAddr & 0x000000FF ) << 24 )
+            );
         }
 
         public static uint GetIPAddressAsUInt( IPAddress ipAddr )
         {
-            byte[] addrBytes = ipAddr.GetAddressBytes();
-            Array.Reverse( addrBytes );
+            DebugLog.Assert( ipAddr.AddressFamily == AddressFamily.InterNetwork, nameof( NetHelpers ), "GetIPAddressAsUInt only works with IPv4 addresses." );
 
-            return BitConverter.ToUInt32( addrBytes, 0 );
+            Span<byte> addrBytes = stackalloc byte[ 4 ];
+            ipAddr.TryWriteBytes( addrBytes, out _ );
+
+            return Unsafe.BitCast<int, uint>( IPAddress.NetworkToHostOrder( BitConverter.ToInt32( addrBytes ) ) );
         }
 
         public static IPAddress GetIPAddress( this CMsgIPAddress ipAddr )
@@ -56,17 +61,14 @@ namespace SteamKit2
         public static CMsgIPAddress GetMsgIPAddress( IPAddress ipAddr )
         {
             var msgIpAddress = new CMsgIPAddress();
-            byte[] addrBytes = ipAddr.GetAddressBytes();
 
             if ( ipAddr.AddressFamily == AddressFamily.InterNetworkV6 )
             {
-                msgIpAddress.v6 = addrBytes;
+                msgIpAddress.v6 = ipAddr.GetAddressBytes();
             }
             else
             {
-                Array.Reverse( addrBytes );
-
-                msgIpAddress.v4 = BitConverter.ToUInt32( addrBytes, 0 );
+                msgIpAddress.v4 = GetIPAddressAsUInt( ipAddr );
             }
 
             return msgIpAddress;
@@ -108,36 +110,36 @@ namespace SteamKit2
 
         public static bool TryParseIPEndPoint( string stringValue, [NotNullWhen( true )] out IPEndPoint? endPoint )
         {
-            var colonPosition = stringValue.LastIndexOf( ':' );
+            if ( !IPEndPoint.TryParse( stringValue, out endPoint ) )
+            {
+                return false;
+            }
 
-            if ( colonPosition == -1 )
+            if ( endPoint.Port == 0 )
             {
                 endPoint = null;
                 return false;
             }
 
-            if ( !IPAddress.TryParse( stringValue.AsSpan( 0, colonPosition ), out var address ) )
-            {
-                endPoint = null;
-                return false;
-            }
-
-            if ( !ushort.TryParse( stringValue.AsSpan( colonPosition + 1 ), out var port ) )
-            {
-                endPoint = null;
-                return false;
-            }
-
-            endPoint = new IPEndPoint( address, port );
             return true;
         }
 
-        public static (string host, int port) ExtractEndpointHost( EndPoint endPoint )
+        public static string ExtractEndpointHost( EndPoint endPoint )
         {
             return endPoint switch
             {
-                IPEndPoint ipep => (ipep.Address.ToString(), ipep.Port),
-                DnsEndPoint dns => (dns.Host, dns.Port),
+                IPEndPoint ipep => ipep.Address.ToString(),
+                DnsEndPoint dns => dns.Host,
+                _ => throw new InvalidOperationException( "Unknown endpoint type." ),
+            };
+        }
+
+        public static int ExtractEndpointPort( EndPoint endPoint )
+        {
+            return endPoint switch
+            {
+                IPEndPoint ipep => ipep.Port,
+                DnsEndPoint dns => dns.Port,
                 _ => throw new InvalidOperationException( "Unknown endpoint type." ),
             };
         }
