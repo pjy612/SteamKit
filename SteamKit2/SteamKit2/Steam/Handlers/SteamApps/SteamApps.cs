@@ -297,7 +297,7 @@ namespace SteamKit2
             }
             catch ( Exception e )
             {
-                Console.WriteLine( e );
+                Console.WriteLine( $"Fail GetCDNAuthToken app:{app} depot:{depot} host_name:{host_name}" );
             }
             return callback;
         }
