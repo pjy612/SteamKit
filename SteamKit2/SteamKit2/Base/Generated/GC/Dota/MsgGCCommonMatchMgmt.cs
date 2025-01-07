@@ -1067,6 +1067,9 @@ namespace SteamKit2.GC.Dota.Internal
         [global::ProtoBuf.ProtoMember(1)]
         public global::System.Collections.Generic.List<MvpDatum> mvps { get; } = new global::System.Collections.Generic.List<MvpDatum>();
 
+        [global::ProtoBuf.ProtoMember(2)]
+        public global::System.Collections.Generic.List<MvpDatum> event_mvps { get; } = new global::System.Collections.Generic.List<MvpDatum>();
+
         [global::ProtoBuf.ProtoContract()]
         public partial class MvpDatum : global::ProtoBuf.IExtensible
         {
@@ -1393,6 +1396,12 @@ namespace SteamKit2.GC.Dota.Internal
                     kKillEaterEventType_Ringmaster_LongRangeDaggerHits = 279,
                     kKillEaterEventType_Ringmaster_MultiHeroWhips = 280,
                     kKillEaterEventType_Ringmaster_MultiHeroMesmerizes = 281,
+                    kKillEaterEventType_Kez_ParryCounterAttacks = 282,
+                    kKillEaterEventType_Kez_RavensVeilKills = 283,
+                    kKillEaterEventType_Kez_RaptorDanceHealing = 284,
+                    kKillEaterEventType_Kez_KillsDuringFalconRush = 285,
+                    kKillEaterEventType_Seasonal_PartyHatsStolen = 286,
+                    kKillEaterEventType_Seasonal_TallestHat = 287,
                 }
 
             }

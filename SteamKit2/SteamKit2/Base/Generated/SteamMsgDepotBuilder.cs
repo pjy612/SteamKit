@@ -67,6 +67,16 @@ namespace SteamKit2.Internal
         public void Resettarget_branch() => __pbn__target_branch = null;
         private string __pbn__target_branch;
 
+        [global::ProtoBuf.ProtoMember(6)]
+        public bool shader_depot
+        {
+            get => __pbn__shader_depot.GetValueOrDefault();
+            set => __pbn__shader_depot = value;
+        }
+        public bool ShouldSerializeshader_depot() => __pbn__shader_depot != null;
+        public void Resetshader_depot() => __pbn__shader_depot = null;
+        private bool? __pbn__shader_depot;
+
     }
 
     [global::ProtoBuf.ProtoContract()]
@@ -457,6 +467,16 @@ namespace SteamKit2.Internal
         public void Resetlive_branch() => __pbn__live_branch = null;
         private string __pbn__live_branch;
 
+        [global::ProtoBuf.ProtoMember(6)]
+        public bool for_local_cs
+        {
+            get => __pbn__for_local_cs.GetValueOrDefault();
+            set => __pbn__for_local_cs = value;
+        }
+        public bool ShouldSerializefor_local_cs() => __pbn__for_local_cs != null;
+        public void Resetfor_local_cs() => __pbn__for_local_cs = null;
+        private bool? __pbn__for_local_cs;
+
         [global::ProtoBuf.ProtoContract()]
         public partial class Depots : global::ProtoBuf.IExtensible
         {
@@ -606,22 +626,22 @@ namespace SteamKit2.Internal
             switch ( methodName )
             {
                 case "InitDepotBuild":
-                    UnifiedMessages.HandleResponseMsg<CContentBuilder_InitDepotBuild_Response>( packetMsg );
+                    PostResponseMsg<CContentBuilder_InitDepotBuild_Response>( packetMsg );
                     break;
                 case "StartDepotUpload":
-                    UnifiedMessages.HandleResponseMsg<CContentBuilder_StartDepotUpload_Response>( packetMsg );
+                    PostResponseMsg<CContentBuilder_StartDepotUpload_Response>( packetMsg );
                     break;
                 case "GetMissingDepotChunks":
-                    UnifiedMessages.HandleResponseMsg<CContentBuilder_GetMissingDepotChunks_Response>( packetMsg );
+                    PostResponseMsg<CContentBuilder_GetMissingDepotChunks_Response>( packetMsg );
                     break;
                 case "FinishDepotUpload":
-                    UnifiedMessages.HandleResponseMsg<CContentBuilder_FinishDepotUpload_Response>( packetMsg );
+                    PostResponseMsg<CContentBuilder_FinishDepotUpload_Response>( packetMsg );
                     break;
                 case "CommitAppBuild":
-                    UnifiedMessages.HandleResponseMsg<CContentBuilder_CommitAppBuild_Response>( packetMsg );
+                    PostResponseMsg<CContentBuilder_CommitAppBuild_Response>( packetMsg );
                     break;
                 case "SignInstallScript":
-                    UnifiedMessages.HandleResponseMsg<CContentBuilder_SignInstallScript_Response>( packetMsg );
+                    PostResponseMsg<CContentBuilder_SignInstallScript_Response>( packetMsg );
                     break;
             }
         }
