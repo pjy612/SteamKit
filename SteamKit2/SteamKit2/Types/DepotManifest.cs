@@ -220,6 +220,16 @@ namespace SteamKit2
             return true;
         }
 
+        public void FixManifest()
+        {
+            foreach ( var file in Files )
+            {
+                file.FileName = file.FileName.TrimEnd( new char[] { '\x00', ' ', '\n', '\t' } );//.Replace(altDirChar, Path.DirectorySeparatorChar);
+                file.Chunks = file.Chunks.OrderBy( f => BitConverter.ToString( f.ChunkID ) ).ToList();
+            }
+            Files = Files.OrderBy( f => f.FileName.ToLower() ).ToList();
+        }
+
         /// <summary>
         /// Serializes depot manifest and saves the output to a file.
         /// </summary>
