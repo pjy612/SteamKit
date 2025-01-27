@@ -10,6 +10,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
+using System.IO.Hashing;
+using System.Security.Cryptography;
 
 namespace SteamKit2
 {
@@ -386,7 +388,140 @@ namespace SteamKit2
             EncryptedCRC = metadata.crc_encrypted;
         }
 
+        class ChunkIdComparer : IEqualityComparer<byte[]>
+        {
+            public bool Equals( byte[]? x, byte[]? y )
+            {
+                if ( ReferenceEquals( x, y ) ) return true;
+                if ( x == null || y == null ) return false;
+                return x.SequenceEqual( y );
+            }
+
+            public int GetHashCode( byte[] obj )
+            {
+                ArgumentNullException.ThrowIfNull( obj );
+
+                // ChunkID is SHA-1, so we can just use the first 4 bytes
+                return BitConverter.ToInt32( obj, 0 );
+            }
+        }
+
+        /// <summary>
+        /// Serializes the depot manifest into the provided output stream.
+        /// </summary>
+        /// <param name="output">The stream to which the serialized depot manifest will be written.</param>
+        public void Serialize( Stream output )
+        {
+            DebugLog.Assert( Files != null, nameof( DepotManifest ), "Files was null when attempting to serialize manifest." );
+
+            var payload = new ContentManifestPayload();
+            var uniqueChunks = new HashSet<byte[]>( new ChunkIdComparer() );
+
+            foreach ( var file in Files )
+            {
+                var protofile = new ContentManifestPayload.FileMapping();
+                protofile.size = file.TotalSize;
+                protofile.flags = ( uint )file.Flags;
+                if ( FilenamesEncrypted )
+                {
+                    // Assume the name is unmodified
+                    protofile.filename = file.FileName;
+                    protofile.sha_filename = file.FileNameHash;
+                }
+                else
+                {
+                    protofile.filename = file.FileName;
+                    protofile.sha_filename = SHA1.HashData( Encoding.UTF8.GetBytes( file.FileName.Replace( '/', '\\' ).ToLowerInvariant() ) );
+                }
+                protofile.sha_content = file.FileHash;
+                if ( !string.IsNullOrWhiteSpace( file.LinkTarget ) )
+                {
+                    protofile.linktarget = file.LinkTarget;
+                }
+
+                foreach ( var chunk in file.Chunks )
+                {
+                    var protochunk = new ContentManifestPayload.FileMapping.ChunkData();
+                    protochunk.sha = chunk.ChunkID;
+                    protochunk.crc = BitConverter.ToUInt32( chunk.Checksum!, 0 );
+                    protochunk.offset = chunk.Offset;
+                    protochunk.cb_original = chunk.UncompressedLength;
+                    protochunk.cb_compressed = chunk.CompressedLength;
+
+                    protofile.chunks.Add( protochunk );
+                    uniqueChunks.Add( chunk.ChunkID! );
+                }
+
+                payload.mappings.Add( protofile );
+            }
+
+            var metadata = new ContentManifestMetadata();
+            metadata.depot_id = DepotID;
+            metadata.gid_manifest = ManifestGID;
+            metadata.creation_time = ( uint )DateUtils.DateTimeToUnixTime( CreationTime );
+            metadata.filenames_encrypted = FilenamesEncrypted;
+            metadata.cb_disk_original = TotalUncompressedSize;
+            metadata.cb_disk_compressed = TotalCompressedSize;
+            metadata.unique_chunks = ( uint )uniqueChunks.Count;
+
+            // Calculate payload CRC
+            using ( var ms_payload = new MemoryStream() )
+            {
+                Serializer.Serialize<ContentManifestPayload>( ms_payload, payload );
+
+                int len = ( int )ms_payload.Length;
+                byte[] data = new byte[ 4 + len ];
+                Buffer.BlockCopy( BitConverter.GetBytes( len ), 0, data, 0, 4 );
+                Buffer.BlockCopy( ms_payload.ToArray(), 0, data, 4, len );
+                uint crc32 = Crc32.HashToUInt32( data );
+
+                if ( FilenamesEncrypted )
+                {
+                    metadata.crc_encrypted = crc32;
+                    metadata.crc_clear = 0;
+                }
+                else
+                {
+                    metadata.crc_encrypted = EncryptedCRC;
+                    metadata.crc_clear = crc32;
+                }
+            }
+
+            using var bw = new BinaryWriter( output, Encoding.Default, true );
+
+            // Write Protobuf payload
+            using ( var ms_payload = new MemoryStream() )
+            {
+                Serializer.Serialize<ContentManifestPayload>( ms_payload, payload );
+                bw.Write( DepotManifest.PROTOBUF_PAYLOAD_MAGIC );
+                bw.Write( ( int )ms_payload.Length );
+                bw.Write( ms_payload.GetBuffer().AsSpan( 0, ( int )ms_payload.Length ) );
+            }
+
+            // Write Protobuf metadata
+            using ( var ms_metadata = new MemoryStream() )
+            {
+                Serializer.Serialize<ContentManifestMetadata>( ms_metadata, metadata );
+                bw.Write( DepotManifest.PROTOBUF_METADATA_MAGIC );
+                bw.Write( ( int )ms_metadata.Length );
+                bw.Write( ms_metadata.GetBuffer().AsSpan( 0, ( int )ms_metadata.Length ) );
+            }
+
+            // Write empty signature section
+            bw.Write( DepotManifest.PROTOBUF_SIGNATURE_MAGIC );
+            bw.Write( 0 );
+
+            // Write EOF marker
+            bw.Write( DepotManifest.PROTOBUF_ENDOFMANIFEST_MAGIC );
+        }
+
         public byte[]? Serialize()
+        {
+            using MemoryStream ms = new MemoryStream();
+            Serialize( ms );
+            return ms.ToArray();
+        }
+        public byte[]? _Serialize()
         {
             DebugLog.Assert( Files != null, nameof( DepotManifest ), "Files was null when attempting to serialize manifest." );
 
@@ -451,7 +586,7 @@ namespace SteamKit2
                 byte[] data = new byte[ 4 + len ];
                 Buffer.BlockCopy( BitConverter.GetBytes( len ), 0, data, 0, 4 );
                 Buffer.BlockCopy( ms_payload.ToArray(), 0, data, 4, len );
-                uint crc32 = Crc32.Compute( data );
+                uint crc32 = Crc32.HashToUInt32( data );
 
                 if ( FilenamesEncrypted )
                 {
